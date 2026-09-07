@@ -53,7 +53,7 @@ Run the same installation command again. It downloads and installs the latest Gi
 | | SystemSage |
 |---|---|
 | Distribution | One native `systemsage.exe` |
-| Download size | Approximately 23 KB for v1.1.1 |
+| Download size | Approximately 27 KB for v1.2.0 |
 | Runtime download | None |
 | Background service | None |
 | Accounts or cloud | None |
@@ -77,7 +77,7 @@ SystemSage uses Windows' existing .NET Framework and management interfaces. It d
 - Physical RAM modules, graphics adapters, disk devices, and device error codes
 - Temporary-file cleanup preview without deleting anything
 - The ten largest files found under the user profile
-- A branded multi-page PDF generated without Python or another runtime
+- A visual PDF health dashboard with a score, metric bars, plain-English guidance, recommendations, and a technical appendix
 
 ## Commands
 
