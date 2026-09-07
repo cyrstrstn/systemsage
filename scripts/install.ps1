@@ -18,7 +18,9 @@ if(!(Test-Path (Join-Path $source 'systemsage.exe'))){throw 'systemsage.exe was 
 $sourcePath=[IO.Path]::GetFullPath($source);$version=(& (Join-Path $sourcePath 'systemsage.exe') --version).Trim();if(!$version){throw 'Could not determine the SystemSage version.'}
 $targetPath=[IO.Path]::GetFullPath((Join-Path $installRoot $version))
 New-Item $targetPath -ItemType Directory -Force|Out-Null
-Copy-Item (Join-Path $sourcePath 'systemsage.exe'),(Join-Path $sourcePath 'LICENSE'),(Join-Path $sourcePath 'README.md') -Destination $targetPath -Force
+$sourceExe=Join-Path $sourcePath 'systemsage.exe';$targetExe=Join-Path $targetPath 'systemsage.exe'
+if(!(Test-Path $targetExe)-or (Get-FileHash $sourceExe).Hash -ne (Get-FileHash $targetExe).Hash){Copy-Item $sourceExe -Destination $targetExe -Force}
+Copy-Item (Join-Path $sourcePath 'LICENSE'),(Join-Path $sourcePath 'README.md') -Destination $targetPath -Force
 $path=[Environment]::GetEnvironmentVariable('Path','User');$kept=@(($path-split';')|Where-Object {$_ -and $_ -notlike "$installRoot*"})
 [Environment]::SetEnvironmentVariable('Path',(($targetPath+';'+($kept-join';')).Trim(';')),'User')
 $env:Path="$targetPath;$env:Path"
