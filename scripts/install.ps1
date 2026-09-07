@@ -1,6 +1,6 @@
 param([string]$Repository,[string]$PackagePath)
 $ErrorActionPreference='Stop'
-$target=Join-Path $env:LOCALAPPDATA 'Programs\SystemSage'
+$installRoot=Join-Path $env:LOCALAPPDATA 'Programs\SystemSage'
 $source=$PSScriptRoot
 if($Repository){
   $release=Invoke-RestMethod "https://api.github.com/repos/$Repository/releases/latest"
@@ -15,12 +15,12 @@ if($PackagePath){
   $source=Join-Path $stage 'SystemSage'
 }
 if(!(Test-Path (Join-Path $source 'systemsage.exe'))){throw 'systemsage.exe was not found in the installation package.'}
-$sourcePath=[IO.Path]::GetFullPath($source);$targetPath=[IO.Path]::GetFullPath($target)
-if((Test-Path $targetPath)-and $sourcePath -ne $targetPath){Remove-Item $targetPath -Recurse -Force}
+$sourcePath=[IO.Path]::GetFullPath($source);$version=(& (Join-Path $sourcePath 'systemsage.exe') --version).Trim();if(!$version){throw 'Could not determine the SystemSage version.'}
+$targetPath=[IO.Path]::GetFullPath((Join-Path $installRoot $version))
 New-Item $targetPath -ItemType Directory -Force|Out-Null
 Copy-Item (Join-Path $sourcePath 'systemsage.exe'),(Join-Path $sourcePath 'LICENSE'),(Join-Path $sourcePath 'README.md') -Destination $targetPath -Force
-$path=[Environment]::GetEnvironmentVariable('Path','User')
-if(($path-split';')-notcontains $targetPath){[Environment]::SetEnvironmentVariable('Path',(($path.TrimEnd(';')+';'+$targetPath).Trim(';')),'User')}
+$path=[Environment]::GetEnvironmentVariable('Path','User');$kept=@(($path-split';')|Where-Object {$_ -and $_ -notlike "$installRoot*"})
+[Environment]::SetEnvironmentVariable('Path',(($targetPath+';'+($kept-join';')).Trim(';')),'User')
 $env:Path="$targetPath;$env:Path"
 Write-Host 'SystemSage installed successfully.' -ForegroundColor Green
 Write-Host 'Open a new terminal and run: systemsage'

@@ -51,7 +51,7 @@ Run the same installation command again. It downloads and installs the latest Gi
 | | SystemSage |
 |---|---|
 | Distribution | One native `systemsage.exe` |
-| Download size | Approximately 13 KB for v1.0.0 |
+| Download size | Approximately 23 KB for v1.1.0 |
 | Runtime download | None |
 | Background service | None |
 | Accounts or cloud | None |
@@ -71,14 +71,18 @@ SystemSage uses Windows' existing .NET Framework and management interfaces. It d
 - Active TCP network connections
 - Current-user and machine-wide startup entries
 - Windows version, device manufacturer, model, architecture, processors, and uptime
-- Readable text reports saved locally under Documents
+- Recent Windows warning and error events from System and Application logs
+- Physical RAM modules, graphics adapters, disk devices, and device error codes
+- Temporary-file cleanup preview without deleting anything
+- The ten largest files found under the user profile
+- A branded multi-page PDF generated without Python or another runtime
 
 ## Commands
 
 | Command | Purpose |
 |---|---|
 | `systemsage` | Open the interactive keyboard menu |
-| `systemsage doctor` | Show CPU, memory, battery, and drive health |
+| `systemsage doctor` | Run the complete PC overview and generate a PDF |
 | `systemsage processes` | List the highest-memory processes |
 | `systemsage storage` | Inspect connected-drive capacity |
 | `systemsage security` | Show antivirus registered with Windows |
@@ -86,7 +90,7 @@ SystemSage uses Windows' existing .NET Framework and management interfaces. It d
 | `systemsage network` | List active TCP connections |
 | `systemsage startup` | Review startup programs and commands |
 | `systemsage system` | Show Windows and hardware details |
-| `systemsage report` | Save a readable local text report |
+| `systemsage report` | Generate the complete dependency-free PDF report |
 | `systemsage --version` | Print the installed version |
 | `systemsage --help` | Show command-line help |
 
