@@ -1,0 +1,19 @@
+name: Release Windows CLI
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build dependency-free CLI
+        shell: powershell
+        run: .\scripts\build-cli.ps1
+      - name: Publish release
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create $env:GITHUB_REF_NAME .\release\SystemSage-Windows.zip --generate-notes --title "SystemSage $env:GITHUB_REF_NAME"

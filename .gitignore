@@ -1,0 +1,7 @@
+release/
+dist/
+dist-native/
+tmp/
+output/
+assets/
+*.user
