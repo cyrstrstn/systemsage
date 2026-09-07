@@ -4,4 +4,5 @@ dist-native/
 tmp/
 output/
 assets/
+docs/screenshots/
 *.user
