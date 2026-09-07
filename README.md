@@ -13,6 +13,8 @@
 
 **A tiny, native, open-source Windows diagnostic CLI with readable results, an interactive menu, and zero background services.**
 
+Interactive launches check the latest GitHub release and offer an optional one-key update. Offline use always continues normally.
+
 [Install](#one-command-install) · [Commands](#commands) · [Build](#build-from-source) · [Releases](https://github.com/cyrstrstn/systemsage/releases)
 
 </div>
@@ -51,7 +53,7 @@ Run the same installation command again. It downloads and installs the latest Gi
 | | SystemSage |
 |---|---|
 | Distribution | One native `systemsage.exe` |
-| Download size | Approximately 23 KB for v1.1.0 |
+| Download size | Approximately 23 KB for v1.1.1 |
 | Runtime download | None |
 | Background service | None |
 | Accounts or cloud | None |
@@ -94,7 +96,7 @@ SystemSage uses Windows' existing .NET Framework and management interfaces. It d
 | `systemsage --version` | Print the installed version |
 | `systemsage --help` | Show command-line help |
 
-The interactive menu uses arrow-key navigation and animated progress indicators. Redirected output is stable and animation-free for scripts, logs, and CI.
+The interactive menu uses arrow-key navigation and real stage-by-stage percentage progress. Redirected output is stable and animation-free for scripts, logs, and CI.
 
 ## Privacy and safety
 
