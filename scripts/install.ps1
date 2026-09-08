@@ -1,13 +1,15 @@
 param([string]$Repository,[string]$PackagePath)
 $ErrorActionPreference='Stop'
+# Safe for: local -File, or in-memory invoke from irm-install.ps1 (no ExecutionPolicy file block)
 $installRoot=Join-Path $env:LOCALAPPDATA 'Programs\SystemSage'
-$source=$PSScriptRoot
+$source=if($PSScriptRoot){$PSScriptRoot}else{(Get-Location).Path}
 if($Repository){
-  $release=Invoke-RestMethod "https://api.github.com/repos/$Repository/releases/latest"
+  $headers=@{'User-Agent'='SystemSage-Installer'}
+  $release=Invoke-RestMethod "https://api.github.com/repos/$Repository/releases/latest" -Headers $headers
   $asset=$release.assets|Where-Object name -eq 'SystemSage-Windows.zip'|Select-Object -First 1
   if(!$asset){throw 'Latest release does not contain SystemSage-Windows.zip.'}
   $PackagePath=Join-Path $env:TEMP 'SystemSage-Windows.zip'
-  Invoke-WebRequest $asset.browser_download_url -OutFile $PackagePath
+  Invoke-WebRequest -UseBasicParsing $asset.browser_download_url -OutFile $PackagePath
 }
 if($PackagePath){
   $stage=Join-Path $env:TEMP ('SystemSage-'+[guid]::NewGuid().ToString('N'))

@@ -251,7 +251,16 @@ namespace SystemSage {
       parts.Add(ToJson("browsers",new[]{"Browser","Size","Files","Action"},BrowserCaches()));
       parts.Add(ToJson("updates",new[]{"Property","Value"},WindowsUpdates()));
       parts.Add(ToJson("boot",new[]{"Property","Value"},BootInfo()));
-      return "{\"systemsage\":\""+JsonEsc("1.4.0")+"\",\"machine\":\""+JsonEsc(Environment.MachineName)+"\",\"sections\":["+String.Join(",",parts)+"]}";
+      parts.Add(ToJson("printers",new[]{"Name","Default","Status","Port","Driver"},Printers()));
+      parts.Add(ToJson("bluetooth",new[]{"Name","Status","Class","Device ID"},Bluetooth()));
+      parts.Add(ToJson("usb",new[]{"Name","Manufacturer","Status","Class","Device ID"},UsbDevices()));
+      parts.Add(ToJson("firewall",new[]{"Profile","State","Inbound","Outbound"},Firewall()));
+      parts.Add(ToJson("bitlocker",new[]{"Volume","Protection","Conversion","Method"},BitLocker()));
+      parts.Add(ToJson("restore",new[]{"Item","Description","Created","Type"},RestorePoints()));
+      parts.Add(ToJson("apps",new[]{"Name","Size","Version","Publisher"},InstalledApps(25)));
+      parts.Add(ToJson("thermal",new[]{"Zone","Celsius","Kelvin","Source"},Thermal()));
+      parts.Add(ToJson("proxy",new[]{"Property","Value"},ProxyAndHosts()));
+      return "{\"systemsage\":\""+JsonEsc("1.5.0")+"\",\"machine\":\""+JsonEsc(Environment.MachineName)+"\",\"sections\":["+String.Join(",",parts)+"]}";
     }
     static string JsonEsc(string s){if(s==null)return "";return s.Replace("\\","\\\\").Replace("\"","\\\"").Replace("\r","\\r").Replace("\n","\\n").Replace("\t","\\t");}
     static string Clean(object value){return Convert.ToString(value??"").Replace('\r',' ').Replace('\n',' ').Trim();}
