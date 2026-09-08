@@ -14,29 +14,67 @@ namespace SystemSage {
   static class FullDiagnostic {
     public static DiagnosticReport Collect(Action<int,string> progress=null) {
       var report=new DiagnosticReport();
-      Step(progress,3,"Reading Windows and device identity");
+      Step(progress,2,"Reading Windows and device identity");
       Add(report,"System",new[]{"Property","Value"},Scan.SystemInfo());
-      Step(progress,9,"Measuring processor and memory usage");
+      Step(progress,6,"Measuring processor and memory usage");
       long[] memory=Scan.Memory();int cpu=Scan.Cpu();string[] battery=Scan.Battery();
-      Add(report,"Health summary",new[]{"Metric","Result"},new List<string[]>{new[]{"CPU usage",cpu+"%"},new[]{"Memory usage",(memory[1]>0?Math.Round((double)memory[0]/memory[1]*100):0)+"% - "+Scan.Bytes(memory[0])+" / "+Scan.Bytes(memory[1])},new[]{"Battery charge",battery[0]},new[]{"Battery health",battery[1]},new[]{"Power state",battery[2]}});
-      Step(progress,16,"Reading physical memory modules");Add(report,"Physical memory",new[]{"Slot","Vendor","Capacity","Type","Speed","Form","Part number"},Scan.MemoryModules());
-      Step(progress,23,"Scanning storage volumes");
+      var modules=Scan.MemoryModules();
+      Add(report,"Health summary",new[]{"Metric","Result"},new List<string[]>{
+        new[]{"CPU usage",cpu+"%"},
+        new[]{"Memory usage",(memory[1]>0?Math.Round((double)memory[0]/memory[1]*100):0)+"% - "+Scan.Bytes(memory[0])+" / "+Scan.Bytes(memory[1])},
+        new[]{"Memory type",Scan.MemoryGenerationSummary(modules)},
+        new[]{"Battery charge",battery[0]},
+        new[]{"Battery health",battery[1]},
+        new[]{"Power state",battery[2]}
+      });
+      Step(progress,10,"Reading physical memory modules");
+      Add(report,"Physical memory",new[]{"Slot","Vendor","Capacity","Type","Speed","Form","Part number"},modules);
+      Step(progress,14,"Scanning storage volumes");
       Add(report,"Storage volumes",new[]{"Drive","Label","Format","Used","Available","Usage"},Scan.Drives());
-      Step(progress,30,"Checking physical disk health");
-      Add(report,"Physical disks",new[]{"Model","Interface","Size","Status"},Wmi("SELECT Model,InterfaceType,Size,Status FROM Win32_DiskDrive",new[]{"Model","InterfaceType","Size","Status"},(row,key)=>key=="Size"?Scan.Bytes(ToLong(row[key])):Clean(row[key])));
-      Step(progress,36,"Reading graphics adapters");Add(report,"Graphics",new[]{"Adapter","Memory","Driver"},Wmi("SELECT Name,AdapterRAM,DriverVersion FROM Win32_VideoController",new[]{"Name","AdapterRAM","DriverVersion"},(row,key)=>key=="AdapterRAM"?Scan.Bytes(ToLong(row[key])):Clean(row[key])));
-      Step(progress,42,"Checking battery health");
-      Add(report,"Battery",new[]{"Metric","Result"},new List<string[]>{new[]{"Current charge",battery[0]},new[]{"Estimated capacity health",battery[1]},new[]{"Power state",battery[2]},new[]{"Estimated remaining",battery[3]}});
-      Step(progress,48,"Checking Windows security providers");Add(report,"Security providers",new[]{"Provider","Registration","State"},Scan.Security());
-      Step(progress,55,"Checking devices for errors");
-      var devices=Wmi("SELECT Name,PNPClass,ConfigManagerErrorCode FROM Win32_PnPEntity WHERE ConfigManagerErrorCode <> 0",new[]{"Name","PNPClass","ConfigManagerErrorCode"},(row,key)=>Clean(row[key]));Add(report,"Devices requiring attention",new[]{"Device","Class","Error code"},devices);report.WarningCount+=devices.Count;
-      Step(progress,63,"Reading recent Windows warnings and errors");var events=RecentErrors();Add(report,"Recent Windows warnings and errors - 7 days",new[]{"Time","Log","Source","Event ID","Message"},events);report.ErrorCount+=events.Count;
-      Step(progress,71,"Ranking processes by memory usage");
+      Step(progress,18,"Checking physical disk health");
+      Add(report,"Disk health",new[]{"Model","Interface","Size","Status","SMART"},Scan.DiskHealth());
+      Step(progress,22,"Reading graphics adapters");
+      Add(report,"GPU",new[]{"Adapter","VRAM","Driver","Driver date","Status","Temp"},Scan.Gpu());
+      Step(progress,26,"Checking battery health");
+      Add(report,"Battery",new[]{"Metric","Result"},new List<string[]>{
+        new[]{"Current charge",battery[0]},
+        new[]{"Battery health",battery[1]},
+        new[]{"Power state",battery[2]},
+        new[]{"Estimated remaining",battery[3]}
+      });
+      Step(progress,30,"Reading displays");
+      Add(report,"Display",new[]{"Display","Resolution","Color","Device","Note"},Scan.Displays());
+      Step(progress,34,"Reading audio devices");
+      Add(report,"Audio devices",new[]{"Name","Manufacturer","Status","PNP"},Scan.AudioDevices());
+      Step(progress,38,"Reading Wi-Fi status");
+      Add(report,"Wi-Fi",new[]{"Adapter","SSID","State","Signal","Rate"},Scan.Wifi());
+      Step(progress,42,"Reading network connections");
+      Add(report,"Network connections",new[]{"State","Local endpoint","Remote endpoint"},Scan.Network().Take(40).ToList());
+      Step(progress,46,"Checking Windows security providers");
+      Add(report,"Security providers",new[]{"Provider","Registration","State"},Scan.Security());
+      Step(progress,50,"Checking Windows Update status");
+      Add(report,"Windows Update",new[]{"Property","Value"},Scan.WindowsUpdates());
+      Step(progress,55,"Reading boot timing");
+      Add(report,"Boot",new[]{"Property","Value"},Scan.BootInfo());
+      Step(progress,58,"Checking devices for errors");
+      var devices=Wmi("SELECT Name,PNPClass,ConfigManagerErrorCode FROM Win32_PnPEntity WHERE ConfigManagerErrorCode <> 0",new[]{"Name","PNPClass","ConfigManagerErrorCode"},(row,key)=>Clean(row[key]));
+      Add(report,"Devices requiring attention",new[]{"Device","Class","Error code"},devices);report.WarningCount+=devices.Count;
+      Step(progress,63,"Reading recent Windows warnings and errors");
+      var events=RecentErrors();Add(report,"Recent Windows warnings and errors - 7 days",new[]{"Time","Log","Source","Event ID","Message"},events);report.ErrorCount+=events.Count;
+      Step(progress,68,"Ranking processes by memory usage");
       Add(report,"Top processes by memory",new[]{"Process","PID","Memory","Threads"},Scan.Processes(10));
-      Step(progress,77,"Reading startup programs");Add(report,"Startup programs",new[]{"Name","Scope","Command"},Scan.Startup());
-      Step(progress,82,"Previewing recoverable temporary files");Add(report,"Temporary file preview",new[]{"Location","Files older than 7 days","Recoverable size","Action"},Scan.TempPreview(7));
-      Step(progress,88,"Scanning user files for largest items");Add(report,"10 largest files in user profile",new[]{"File","Size","Modified"},LargestFiles(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),10,progress));
-      Step(progress,95,"Finalizing diagnostic results");
+      Step(progress,72,"Reading startup programs");
+      Add(report,"Startup programs",new[]{"Name","Scope","Command"},Scan.Startup());
+      Step(progress,76,"Reading Outlook accounts and storage");
+      Add(report,"Outlook accounts",new[]{"Account","Source"},Scan.OutlookAccounts());
+      Add(report,"Outlook on-disk storage",new[]{"Name","Size","Modified","Path"},Scan.OutlookStores());
+      Step(progress,80,"Measuring browser cache folders");
+      Add(report,"Browser cache",new[]{"Browser","Size","Files","Action"},Scan.BrowserCaches());
+      Step(progress,84,"Previewing recoverable temporary files");
+      Add(report,"Temporary file preview",new[]{"Location","Files older than 7 days","Recoverable size","Action"},Scan.TempPreview(7));
+      Step(progress,88,"Scanning user files for largest items");
+      Add(report,"10 largest files in user profile",new[]{"File","Size","Modified"},LargestFiles(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),10,progress));
+      Step(progress,96,"Finalizing diagnostic results");
       return report;
     }
     static void Step(Action<int,string> progress,int percent,string label){if(progress!=null)progress(percent,label);}

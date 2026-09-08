@@ -41,7 +41,28 @@ namespace SystemSage {
     public static List<string[]> Processes(int limit){return Process.GetProcesses().Select(p=>{try{return new[]{p.ProcessName,p.Id.ToString(),Bytes(p.WorkingSet64),p.WorkingSet64.ToString(),p.Threads.Count.ToString()};}catch{return null;}}).Where(x=>x!=null).OrderByDescending(x=>Int64.Parse(x[3])).Take(limit).Select(x=>new[]{x[0],x[1],x[2],x[4]}).ToList();}
     public static List<string[]> Drives(){return DriveInfo.GetDrives().Where(d=>d.IsReady).Select(d=>new[]{d.Name,String.IsNullOrEmpty(d.VolumeLabel)?"Local disk":d.VolumeLabel,d.DriveFormat,Bytes(d.TotalSize-d.AvailableFreeSpace),Bytes(d.AvailableFreeSpace),Math.Round((double)(d.TotalSize-d.AvailableFreeSpace)/d.TotalSize*100)+"%"}).ToList();}
     public static List<string[]> Security(){var rows=new List<string[]>();try{foreach(ManagementObject x in new ManagementObjectSearcher("root\\SecurityCenter2","SELECT displayName,productState FROM AntivirusProduct").Get())rows.Add(new[]{Convert.ToString(x["displayName"]),"Registered","0x"+Convert.ToInt32(x["productState"]).ToString("X6")});}catch(Exception e){rows.Add(new[]{"Windows Security","Unavailable",e.Message});}return rows;}
-    public static string[] Battery(){var p=System.Windows.Forms.SystemInformation.PowerStatus;int charge=(int)Math.Round(p.BatteryLifePercent*100);string health="Not exposed by firmware";try{double full=0,design=0;foreach(ManagementObject x in new ManagementObjectSearcher("root\\wmi","SELECT FullChargedCapacity FROM BatteryFullChargedCapacity").Get()){full=Convert.ToDouble(x["FullChargedCapacity"]);break;}foreach(ManagementObject x in new ManagementObjectSearcher("root\\wmi","SELECT DesignedCapacity FROM BatteryStaticData").Get()){design=Convert.ToDouble(x["DesignedCapacity"]);break;}if(design>0)health=Math.Round(full/design*100)+"%";}catch{}return new[]{charge+"%",health,p.PowerLineStatus==System.Windows.Forms.PowerLineStatus.Online?"Plugged in":"On battery",p.BatteryLifeRemaining>0?TimeSpan.FromSeconds(p.BatteryLifeRemaining).ToString(@"h\h\ m\m"):"Calculating"};}
+    public static string[] Battery(){
+      var p=System.Windows.Forms.SystemInformation.PowerStatus;
+      bool noBattery=(p.BatteryChargeStatus&System.Windows.Forms.BatteryChargeStatus.NoSystemBattery)!=0;
+      bool plugged=p.PowerLineStatus==System.Windows.Forms.PowerLineStatus.Online;
+      if(noBattery)return new[]{"N/A (no battery)","100%","Plugged in","AC power - desktop / no battery"};
+      int charge=(int)Math.Round(p.BatteryLifePercent*100);
+      if(charge<0||charge>100)charge=plugged?100:0;
+      string health="Not exposed by firmware";
+      try{
+        double full=0,design=0;
+        foreach(ManagementObject x in new ManagementObjectSearcher("root\\wmi","SELECT FullChargedCapacity FROM BatteryFullChargedCapacity").Get()){full=Convert.ToDouble(x["FullChargedCapacity"]);break;}
+        foreach(ManagementObject x in new ManagementObjectSearcher("root\\wmi","SELECT DesignedCapacity FROM BatteryStaticData").Get()){design=Convert.ToDouble(x["DesignedCapacity"]);break;}
+        if(design>0)health=Math.Round(full/design*100)+"%";
+      }catch{}
+      // Desktop-like / firmware silent while on AC: treat as healthy plugged-in power
+      if(health=="Not exposed by firmware"&&plugged)health="100%";
+      string remaining;
+      if(plugged)remaining="Plugged in - charging / AC power";
+      else if(p.BatteryLifeRemaining>0)remaining=TimeSpan.FromSeconds(p.BatteryLifeRemaining).ToString(@"h\h\ m\m");
+      else remaining="Calculating";
+      return new[]{charge+"%",health,plugged?"Plugged in":"On battery",remaining};
+    }
     public static List<string[]> Network(){return IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpConnections().OrderBy(x=>x.State).Take(100).Select(x=>new[]{x.State.ToString(),x.LocalEndPoint.ToString(),x.RemoteEndPoint.ToString()}).ToList();}
     public static List<string[]> Startup(){var rows=new List<string[]>();ReadRun(Registry.CurrentUser,"Current user",rows);ReadRun(Registry.LocalMachine,"All users",rows);return rows;}
     static void ReadRun(RegistryKey root,string scope,List<string[]> rows){using(var key=root.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Run")){if(key==null)return;foreach(string name in key.GetValueNames())rows.Add(new[]{name,scope,Convert.ToString(key.GetValue(name))});}}
