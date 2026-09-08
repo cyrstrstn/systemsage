@@ -15,7 +15,7 @@
 
 Interactive launches check the latest GitHub release and offer an optional one-key update. Offline use always continues normally.
 
-[Install](#one-command-install) · [Commands](#commands) · [Build](#build-from-source) · [Releases](https://github.com/cyrstrstn/systemsage/releases)
+[Install](#one-command-install) · [Scripts blocked?](#if-scripts-are-blocked-executionpolicy) · [Commands](#commands) · [Build](#build-from-source) · [Releases](https://github.com/cyrstrstn/systemsage/releases)
 
 </div>
 
