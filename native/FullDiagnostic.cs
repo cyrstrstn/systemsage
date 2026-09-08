@@ -19,7 +19,7 @@ namespace SystemSage {
       Step(progress,9,"Measuring processor and memory usage");
       long[] memory=Scan.Memory();int cpu=Scan.Cpu();string[] battery=Scan.Battery();
       Add(report,"Health summary",new[]{"Metric","Result"},new List<string[]>{new[]{"CPU usage",cpu+"%"},new[]{"Memory usage",(memory[1]>0?Math.Round((double)memory[0]/memory[1]*100):0)+"% - "+Scan.Bytes(memory[0])+" / "+Scan.Bytes(memory[1])},new[]{"Battery charge",battery[0]},new[]{"Battery health",battery[1]},new[]{"Power state",battery[2]}});
-      Step(progress,16,"Reading physical memory modules");Add(report,"Physical memory",new[]{"Slot","Manufacturer","Capacity","Speed","Part number"},Wmi("SELECT DeviceLocator,Manufacturer,Capacity,Speed,PartNumber FROM Win32_PhysicalMemory",new[]{"DeviceLocator","Manufacturer","Capacity","Speed","PartNumber"},(row,key)=>key=="Capacity"?Scan.Bytes(ToLong(row[key])):Clean(row[key])));
+      Step(progress,16,"Reading physical memory modules");Add(report,"Physical memory",new[]{"Slot","Vendor","Capacity","Type","Speed","Form","Part number"},Scan.MemoryModules());
       Step(progress,23,"Scanning storage volumes");
       Add(report,"Storage volumes",new[]{"Drive","Label","Format","Used","Available","Usage"},Scan.Drives());
       Step(progress,30,"Checking physical disk health");
@@ -34,8 +34,7 @@ namespace SystemSage {
       Step(progress,71,"Ranking processes by memory usage");
       Add(report,"Top processes by memory",new[]{"Process","PID","Memory","Threads"},Scan.Processes(10));
       Step(progress,77,"Reading startup programs");Add(report,"Startup programs",new[]{"Name","Scope","Command"},Scan.Startup());
-      Step(progress,82,"Previewing recoverable temporary files");
-      string userTemp=Path.GetTempPath(),windowsTemp=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows),"Temp");long userBytes,windowsBytes;int userFiles,windowsFiles;ScanFolder(userTemp,7,out userFiles,out userBytes);ScanFolder(windowsTemp,7,out windowsFiles,out windowsBytes);Add(report,"Temporary file preview",new[]{"Location","Files older than 7 days","Recoverable size","Action"},new List<string[]>{new[]{userTemp,userFiles.ToString(),Scan.Bytes(userBytes),"Preview only - nothing deleted"},new[]{windowsTemp,windowsFiles.ToString(),Scan.Bytes(windowsBytes),"Preview only - access permitting"},new[]{"Combined",(userFiles+windowsFiles).ToString(),Scan.Bytes(userBytes+windowsBytes),"No files deleted"}});
+      Step(progress,82,"Previewing recoverable temporary files");Add(report,"Temporary file preview",new[]{"Location","Files older than 7 days","Recoverable size","Action"},Scan.TempPreview(7));
       Step(progress,88,"Scanning user files for largest items");Add(report,"10 largest files in user profile",new[]{"File","Size","Modified"},LargestFiles(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),10,progress));
       Step(progress,95,"Finalizing diagnostic results");
       return report;

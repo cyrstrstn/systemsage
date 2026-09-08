@@ -65,7 +65,7 @@ SystemSage uses Windows' existing .NET Framework and management interfaces. It d
 
 ## What it checks
 
-- Live CPU and physical memory usage
+- Live CPU and physical memory usage, plus per-module vendor, type (DDR4/DDR5), speed, and part numbers
 - Battery charge, power state, estimated runtime, and capacity health
 - Connected-drive capacity and available space
 - Highest-memory running processes
@@ -75,7 +75,8 @@ SystemSage uses Windows' existing .NET Framework and management interfaces. It d
 - Windows version, device manufacturer, model, architecture, processors, and uptime
 - Recent Windows warning and error events from System and Application logs
 - Physical RAM modules, graphics adapters, disk devices, and device error codes
-- Temporary-file cleanup preview without deleting anything
+- Temporary-file cleanup preview, with optional confirmed cleanup for files older than 7 days
+- Local Outlook account identities and on-disk OST/PST/cache size (not server mailbox quota)
 - The ten largest files found under the user profile
 - A visual PDF health dashboard with a score, metric bars, plain-English guidance, recommendations, and a technical appendix
 
@@ -85,16 +86,29 @@ SystemSage uses Windows' existing .NET Framework and management interfaces. It d
 |---|---|
 | `systemsage` | Open the interactive keyboard menu |
 | `systemsage doctor` | Run the complete PC overview and generate a PDF |
-| `systemsage processes` | List the highest-memory processes |
-| `systemsage storage` | Inspect connected-drive capacity |
-| `systemsage security` | Show antivirus registered with Windows |
-| `systemsage battery` | Inspect charge, runtime, and estimated health |
-| `systemsage network` | List active TCP connections |
-| `systemsage startup` | Review startup programs and commands |
-| `systemsage system` | Show Windows and hardware details |
-| `systemsage report` | Generate the complete dependency-free PDF report |
-| `systemsage --version` | Print the installed version |
-| `systemsage --help` | Show command-line help |
+| `systemsage memory [--pdf] [--json]` | RAM usage, modules, vendor, DDR type, speed |
+| `systemsage gpu [--pdf] [--json]` | Graphics adapters, VRAM, driver |
+| `systemsage diskhealth [--pdf] [--json]` | Disk status and failure-predict when available |
+| `systemsage storage [--pdf] [--json]` | Connected-drive capacity |
+| `systemsage wifi [--pdf] [--json]` | SSID, signal, link rates |
+| `systemsage boot [--pdf] [--json]` | Last boot, uptime, startup list |
+| `systemsage updates [--pdf] [--json]` | Windows Update last success + pending count |
+| `systemsage display [--pdf] [--json]` | Monitors and resolution |
+| `systemsage audio [--pdf] [--json]` | Sound devices |
+| `systemsage browsers [--pdf] [--json]` | Edge/Chrome/Firefox/Brave cache sizes (preview) |
+| `systemsage processes` | Highest-memory processes |
+| `systemsage temp` | Temp files older than 7 days (preview) |
+| `systemsage temp --clean --yes` | Delete unlocked old temp files |
+| `systemsage outlook [--pdf]` | Outlook accounts and on-disk storage |
+| `systemsage security` | Registered antivirus |
+| `systemsage battery [--pdf] [--json]` | Charge, runtime, estimated health |
+| `systemsage network` | Active TCP connections |
+| `systemsage startup` | Startup programs |
+| `systemsage system` | Windows and hardware details |
+| `systemsage json` | Multi-section JSON export to Documents |
+| `systemsage report` | Full PDF report |
+| `systemsage --version` | Print version |
+| `systemsage --help` | Show help |
 
 The interactive menu uses arrow-key navigation and real stage-by-stage percentage progress. Redirected output is stable and animation-free for scripts, logs, and CI.
 
@@ -105,7 +119,7 @@ The interactive menu uses arrow-key navigation and real stage-by-stage percentag
 - There are no analytics, advertisements, accounts, or tracking identifiers.
 - Nothing runs automatically when Windows starts.
 - There is no resident agent or background service.
-- Current diagnostic commands do not delete, repair, or modify system settings.
+- Current diagnostic commands do not delete, repair, or modify system settings unless you explicitly run temp cleanup and confirm with `YES` / `--yes`.
 - Reports remain on the user's device unless the user shares them.
 
 ## Build from source
@@ -139,7 +153,10 @@ Run the full command smoke test:
 ## Project structure
 
 ```text
-native/SystemSageCli.cs       Application, diagnostics, and terminal UI
+native/SystemSageCli.cs       Application, menu, and core scans
+native/MoreScans.cs           GPU, disk, Wi-Fi, boot, updates, display, audio, browsers, JSON
+native/FullDiagnostic.cs      Full doctor collection
+native/StyledPdfReport.cs     Visual PDF dashboard
 scripts/build-cli.ps1         Reproducible native Windows build
 scripts/install.ps1           Local and GitHub release installer
 scripts/irm-install.ps1       Public one-command installation entry point
