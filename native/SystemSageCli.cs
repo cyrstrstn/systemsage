@@ -198,7 +198,7 @@ namespace SystemSage {
   }
 
   static class App {
-    const string Version="1.4.0";
+    const string Version="1.5.0";
     public static int Main(string[] args){try{if(args.Length==0&&Environment.UserInteractive&&!Console.IsInputRedirected){if(CheckForUpdate())return 0;Menu();return 0;}return Command(args);}catch(Exception e){Console.ForegroundColor=ConsoleColor.Red;Console.Error.WriteLine("SystemSage: "+e.Message);Console.ResetColor();return 1;}}
     static bool CheckForUpdate(){try{ServicePointManager.SecurityProtocol|=(SecurityProtocolType)3072;var request=(HttpWebRequest)WebRequest.Create("https://api.github.com/repos/cyrstrstn/systemsage/releases/latest");request.UserAgent="SystemSage/"+Version;request.Timeout=2500;request.ReadWriteTimeout=2500;string json;using(var response=request.GetResponse())using(var reader=new StreamReader(response.GetResponseStream()))json=reader.ReadToEnd();var match=Regex.Match(json,"\\\"tag_name\\\"\\s*:\\s*\\\"v?([^\\\"]+)\\\"");if(!match.Success)return false;Version latest;if(!System.Version.TryParse(match.Groups[1].Value,out latest))return false;Version current;if(!System.Version.TryParse(Version,out current)||latest<=current)return false;Ui.Header("Update available");Console.ForegroundColor=ConsoleColor.Green;Console.WriteLine(" SystemSage "+latest+" is available");Console.ResetColor();Console.WriteLine(" Installed version: "+Version+"\n");Console.Write(" Press U to update now, or any other key to skip: ");if(Console.ReadKey(true).Key!=ConsoleKey.U)return false;Console.WriteLine("\n Starting the one-click updater...");string url="https://raw.githubusercontent.com/cyrstrstn/systemsage/main/scripts/irm-install.ps1?cache="+Guid.NewGuid().ToString("N");string command="$ProgressPreference='SilentlyContinue'; irm '"+url+"' | iex";Process.Start(new ProcessStartInfo("powershell.exe","-NoProfile -ExecutionPolicy Bypass -Command \""+command+"\""){UseShellExecute=true});return true;}catch{return false;}}
     static bool HasFlag(string[] args,string flag){for(int i=1;i<args.Length;i++)if(String.Equals(args[i],flag,StringComparison.OrdinalIgnoreCase))return true;return false;}
@@ -221,6 +221,16 @@ namespace SystemSage {
       if(c=="display"){ShowDisplay(HasFlag(args,"--pdf"),HasFlag(args,"--json"));return 0;}
       if(c=="audio"){ShowAudio(HasFlag(args,"--pdf"),HasFlag(args,"--json"));return 0;}
       if(c=="browsers"||c=="browser"){ShowBrowsers(HasFlag(args,"--pdf"),HasFlag(args,"--json"));return 0;}
+      if(c=="printers"||c=="printer"){ShowTableCmd("Printers",new[]{"Name","Default","Status","Port","Driver"},Scan.Printers,HasFlag(args,"--pdf"),HasFlag(args,"--json"));return 0;}
+      if(c=="bluetooth"||c=="bt"){ShowTableCmd("Bluetooth",new[]{"Name","Status","Class","Device ID"},Scan.Bluetooth,HasFlag(args,"--pdf"),HasFlag(args,"--json"));return 0;}
+      if(c=="usb"){ShowTableCmd("USB devices",new[]{"Name","Manufacturer","Status","Class","Device ID"},Scan.UsbDevices,HasFlag(args,"--pdf"),HasFlag(args,"--json"));return 0;}
+      if(c=="firewall"){ShowTableCmd("Firewall",new[]{"Profile","State","Inbound","Outbound"},Scan.Firewall,HasFlag(args,"--pdf"),HasFlag(args,"--json"));return 0;}
+      if(c=="bitlocker"){ShowTableCmd("BitLocker",new[]{"Volume","Protection","Conversion","Method"},Scan.BitLocker,HasFlag(args,"--pdf"),HasFlag(args,"--json"));return 0;}
+      if(c=="restore"){ShowTableCmd("Restore points",new[]{"Item","Description","Created","Type"},Scan.RestorePoints,HasFlag(args,"--pdf"),HasFlag(args,"--json"));return 0;}
+      if(c=="apps"){ShowTableCmd("Installed apps",new[]{"Name","Size","Version","Publisher"},()=>Scan.InstalledApps(30),HasFlag(args,"--pdf"),HasFlag(args,"--json"));return 0;}
+      if(c=="thermal"||c=="temps"){ShowTableCmd("Thermal zones",new[]{"Zone","Celsius","Kelvin","Source"},Scan.Thermal,HasFlag(args,"--pdf"),HasFlag(args,"--json"));return 0;}
+      if(c=="proxy"||c=="hosts"){ShowTableCmd("Proxy & hosts",new[]{"Property","Value"},Scan.ProxyAndHosts,HasFlag(args,"--pdf"),HasFlag(args,"--json"));return 0;}
+      if(c=="baseline"||c=="compare"){return ShowBaseline(c=="compare"||HasFlag(args,"--compare"),HasFlag(args,"--save"));}
       if(c=="security"){ShowSecurity();return 0;}
       if(c=="battery"){ShowBattery(HasFlag(args,"--pdf"),HasFlag(args,"--json"));return 0;}
       if(c=="network"){ShowNetwork();return 0;}
@@ -231,7 +241,13 @@ namespace SystemSage {
     }
     static void Menu(){
       int selected=0;
-      string[] labels={"Complete PC health overview","Memory modules","GPU","Disk health","Storage usage","Wi-Fi","Boot time","Windows Update","Display","Audio devices","Browser cache","Temporary files","Outlook accounts & storage","Top processes","Security status","Battery health","Network connections","Startup programs","System details","Export JSON","Generate full PDF report","Exit"};
+      string[] labels={
+        "Complete PC health overview","Memory modules","GPU","Disk health","Storage usage","Wi-Fi","Boot time","Windows Update",
+        "Display","Audio devices","Browser cache","Printers","Bluetooth","USB devices","Firewall","BitLocker","Restore points",
+        "Installed apps","Thermal zones","Proxy & hosts","Baseline compare","Temporary files","Outlook accounts & storage",
+        "Top processes","Security status","Battery health","Network connections","Startup programs","System details",
+        "Export JSON","Generate full PDF report","Exit"
+      };
       while(true){
         Ui.Header("Diagnostic menu");
         for(int i=0;i<labels.Length;i++){if(i==selected){Console.BackgroundColor=ConsoleColor.DarkGreen;Console.ForegroundColor=ConsoleColor.White;Console.WriteLine(" > "+labels[i].PadRight(36));Console.ResetColor();}else Console.WriteLine("   "+labels[i]);}
@@ -244,11 +260,37 @@ namespace SystemSage {
       }
     }
     static void RunIndex(int i){
-      if(i==0)Overview();else if(i==1)ShowMemory(false,false);else if(i==2)ShowGpu(false,false);else if(i==3)ShowDiskHealth(false,false);
-      else if(i==4)ShowStorage(false,false);else if(i==5)ShowWifi(false,false);else if(i==6)ShowBoot(false,false);else if(i==7)ShowUpdates(false,false);
-      else if(i==8)ShowDisplay(false,false);else if(i==9)ShowAudio(false,false);else if(i==10)ShowBrowsers(false,false);else if(i==11)ShowTemp(false,false);
-      else if(i==12)ShowOutlook(false);else if(i==13)ShowProcesses();else if(i==14)ShowSecurity();else if(i==15)ShowBattery(false,false);
-      else if(i==16)ShowNetwork();else if(i==17)ShowStartup();else if(i==18)ShowSystem();else if(i==19)ShowJsonExport();else Report();
+      if(i==0)Overview();
+      else if(i==1)ShowMemory(false,false);
+      else if(i==2)ShowGpu(false,false);
+      else if(i==3)ShowDiskHealth(false,false);
+      else if(i==4)ShowStorage(false,false);
+      else if(i==5)ShowWifi(false,false);
+      else if(i==6)ShowBoot(false,false);
+      else if(i==7)ShowUpdates(false,false);
+      else if(i==8)ShowDisplay(false,false);
+      else if(i==9)ShowAudio(false,false);
+      else if(i==10)ShowBrowsers(false,false);
+      else if(i==11)ShowTableCmd("Printers",new[]{"Name","Default","Status","Port","Driver"},Scan.Printers,false,false);
+      else if(i==12)ShowTableCmd("Bluetooth",new[]{"Name","Status","Class","Device ID"},Scan.Bluetooth,false,false);
+      else if(i==13)ShowTableCmd("USB devices",new[]{"Name","Manufacturer","Status","Class","Device ID"},Scan.UsbDevices,false,false);
+      else if(i==14)ShowTableCmd("Firewall",new[]{"Profile","State","Inbound","Outbound"},Scan.Firewall,false,false);
+      else if(i==15)ShowTableCmd("BitLocker",new[]{"Volume","Protection","Conversion","Method"},Scan.BitLocker,false,false);
+      else if(i==16)ShowTableCmd("Restore points",new[]{"Item","Description","Created","Type"},Scan.RestorePoints,false,false);
+      else if(i==17)ShowTableCmd("Installed apps",new[]{"Name","Size","Version","Publisher"},()=>Scan.InstalledApps(30),false,false);
+      else if(i==18)ShowTableCmd("Thermal zones",new[]{"Zone","Celsius","Kelvin","Source"},Scan.Thermal,false,false);
+      else if(i==19)ShowTableCmd("Proxy & hosts",new[]{"Property","Value"},Scan.ProxyAndHosts,false,false);
+      else if(i==20)ShowBaseline(true,false);
+      else if(i==21)ShowTemp(false,false);
+      else if(i==22)ShowOutlook(false);
+      else if(i==23)ShowProcesses();
+      else if(i==24)ShowSecurity();
+      else if(i==25)ShowBattery(false,false);
+      else if(i==26)ShowNetwork();
+      else if(i==27)ShowStartup();
+      else if(i==28)ShowSystem();
+      else if(i==29)ShowJsonExport();
+      else Report();
     }
     static void Overview(){Ui.Header("Complete PC health overview");var report=FullDiagnostic.Collect(Ui.Progress);Ui.Progress(97,"Building readable PDF report");string pdf=StyledPdfReport.Write(report);Ui.Progress(100,"Diagnostic complete");FullDiagnostic.Print(report);Console.ForegroundColor=ConsoleColor.Green;Console.WriteLine("\n PDF report ready");Console.ResetColor();Console.WriteLine(" "+pdf);if(!Console.IsInputRedirected&&!Console.IsOutputRedirected){Console.Write("\n Press V to view the PDF, or any other key to continue: ");if(Console.ReadKey(true).Key==ConsoleKey.V)TryOpen(pdf);}}
     static void ShowMemory(bool pdf,bool json){
@@ -365,6 +407,33 @@ namespace SystemSage {
       Console.ForegroundColor=ConsoleColor.DarkGray;Console.WriteLine("\n Preview only — SystemSage does not delete browser cache in this version.");Console.ResetColor();
       if(pdf||OfferPdf())WriteSectionPdf("Browser cache",new[]{"Metric","Result"},new List<string[]>{new[]{"Locations",rows.Count.ToString()}},new[]{"Browser","Size","Files","Action"},rows);
     }
+    static void ShowTableCmd(string title,string[] cols,Func<List<string[]>> loader,bool pdf,bool json){
+      if(json){Console.WriteLine(Scan.ToJson(title.ToLowerInvariant().Replace(" ","_").Replace("&","and"),cols,loader()));return;}
+      Ui.Header(title);
+      var rows=Ui.Loading("Reading "+title.ToLowerInvariant(),loader);
+      Ui.Table(cols,rows);
+      if(pdf||OfferPdf())WriteSectionPdf(title,new[]{"Metric","Result"},new List<string[]>{new[]{"Rows",rows.Count.ToString()}},cols,rows);
+    }
+    static int ShowBaseline(bool compare,bool save){
+      Ui.Header("Baseline");
+      bool exists=File.Exists(Scan.BaselinePath());
+      if(save||(!compare&&!exists)){
+        if(!save){
+          if(Console.IsInputRedirected||Console.IsOutputRedirected){Console.Error.WriteLine("No baseline. Run: systemsage baseline --save");return 2;}
+          Console.Write(" No baseline yet. Press S to save one now, or any other key to cancel: ");
+          if(Console.ReadKey(true).Key!=ConsoleKey.S){Console.WriteLine();return 0;}
+        }
+        string path=Ui.Loading("Saving baseline snapshot",Scan.SaveBaseline);
+        Console.ForegroundColor=ConsoleColor.Green;Console.WriteLine(" [READY] Baseline saved");Console.ResetColor();
+        Console.WriteLine(" "+path);
+        if(!compare)return 0;
+      }
+      if(!compare&&exists&&!save)compare=true;
+      if(!compare){Console.WriteLine(" Baseline file: "+Scan.BaselinePath());return 0;}
+      var rows=Ui.Loading("Comparing against baseline",Scan.CompareBaseline);
+      Ui.Table(new[]{"Metric","Baseline","Current","Status"},rows);
+      return 0;
+    }
     static void ShowJsonExport(){
       Ui.Header("Export JSON");
       string json=Ui.Loading("Collecting diagnostic JSON",Scan.ExportJsonBundle);
@@ -400,7 +469,7 @@ namespace SystemSage {
       if(!Console.IsInputRedirected&&!Console.IsOutputRedirected){Console.Write("\n Press V to view the PDF, or any other key to continue: ");if(Console.ReadKey(true).Key==ConsoleKey.V)TryOpen(path);}
     }
     static void TryOpen(string path){try{Process.Start(new ProcessStartInfo(path){UseShellExecute=true});}catch(Exception e){Console.WriteLine(" Could not open PDF: "+e.Message);}}
-    static void Help(){Console.WriteLine("SystemSage "+Version+" - lightweight Windows diagnostics\n\nUsage:\n  systemsage                 Interactive menu\n  systemsage doctor          Complete PC overview and PDF\n  systemsage memory [--pdf] [--json]\n  systemsage gpu [--pdf] [--json]\n  systemsage diskhealth [--pdf] [--json]\n  systemsage storage [--pdf] [--json]\n  systemsage wifi [--pdf] [--json]\n  systemsage boot [--pdf] [--json]\n  systemsage updates [--pdf] [--json]\n  systemsage display [--pdf] [--json]\n  systemsage audio [--pdf] [--json]\n  systemsage browsers [--pdf] [--json]\n  systemsage temp            Temp preview (older than 7 days)\n  systemsage temp --clean --yes\n  systemsage outlook [--pdf]\n  systemsage processes|security|battery|network|startup|system\n  systemsage json            Export multi-section JSON report\n  systemsage report          Full PDF report\n  systemsage --version");}
+    static void Help(){Console.WriteLine("SystemSage "+Version+" - lightweight Windows diagnostics\n\nUsage:\n  systemsage                 Interactive menu\n  systemsage doctor          Complete PC overview and PDF\n  systemsage memory|gpu|diskhealth|storage|wifi|boot|updates|display|audio|browsers [--pdf] [--json]\n  systemsage printers|bluetooth|usb|firewall|bitlocker|restore|apps|thermal|proxy [--pdf] [--json]\n  systemsage baseline --save     Save metric baseline\n  systemsage compare             Diff vs baseline\n  systemsage temp [--clean --yes]\n  systemsage outlook [--pdf]\n  systemsage processes|security|battery|network|startup|system\n  systemsage json|report|--version|--help");}
   }
 }
 

@@ -29,6 +29,12 @@ Open **PowerShell** and paste:
 irm https://raw.githubusercontent.com/cyrstrstn/systemsage/main/scripts/irm-install.ps1 | iex
 ```
 
+If your PC blocks scripts (`running scripts is disabled` / ExecutionPolicy), use this instead — still one paste, no permanent policy change:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/cyrstrstn/systemsage/main/scripts/irm-install.ps1 | iex"
+```
+
 Open a new terminal, then launch the interactive menu:
 
 ```powershell
@@ -36,7 +42,7 @@ systemsage
 ```
 
 > [!NOTE]
-> Installation is per-user and does not require Administrator access. SystemSage is installed under `%LOCALAPPDATA%\Programs\SystemSage` and added to your user `PATH`.
+> Installation is per-user and does not require Administrator access. SystemSage is installed under `%LOCALAPPDATA%\Programs\SystemSage` and added to your user `PATH`. The installer runs in memory and does not require changing your system ExecutionPolicy permanently.
 
 ### Update
 
@@ -46,7 +52,10 @@ Run the same installation command again. It downloads and installs the latest Gi
 
 1. Download [`SystemSage-Windows.zip`](https://github.com/cyrstrstn/systemsage/releases/latest/download/SystemSage-Windows.zip).
 2. Extract the archive.
-3. Run `install.ps1` from PowerShell.
+3. From that folder in PowerShell run:
+   ```powershell
+   powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
+   ```
 
 ## Why SystemSage?
 
@@ -96,6 +105,17 @@ SystemSage uses Windows' existing .NET Framework and management interfaces. It d
 | `systemsage display [--pdf] [--json]` | Monitors and resolution |
 | `systemsage audio [--pdf] [--json]` | Sound devices |
 | `systemsage browsers [--pdf] [--json]` | Edge/Chrome/Firefox/Brave cache sizes (preview) |
+| `systemsage printers [--pdf] [--json]` | Installed printers and default |
+| `systemsage bluetooth [--pdf] [--json]` | Bluetooth adapter / paired devices |
+| `systemsage usb [--pdf] [--json]` | USB devices |
+| `systemsage firewall [--pdf] [--json]` | Firewall profile state |
+| `systemsage bitlocker [--pdf] [--json]` | Volume encryption status (may need elevation) |
+| `systemsage restore [--pdf] [--json]` | System restore points |
+| `systemsage apps [--pdf] [--json]` | Top installed apps by estimated size |
+| `systemsage thermal [--pdf] [--json]` | ACPI thermal zones when exposed |
+| `systemsage proxy [--pdf] [--json]` | Proxy settings and hosts entries |
+| `systemsage baseline --save` | Save metric baseline snapshot |
+| `systemsage compare` | Diff current metrics vs baseline |
 | `systemsage processes` | Highest-memory processes |
 | `systemsage temp` | Temp files older than 7 days (preview) |
 | `systemsage temp --clean --yes` | Delete unlocked old temp files |
@@ -155,6 +175,7 @@ Run the full command smoke test:
 ```text
 native/SystemSageCli.cs       Application, menu, and core scans
 native/MoreScans.cs           GPU, disk, Wi-Fi, boot, updates, display, audio, browsers, JSON
+native/ExtraScans.cs          Printers, Bluetooth, USB, firewall, BitLocker, restore, apps, thermal, proxy, baseline
 native/FullDiagnostic.cs      Full doctor collection
 native/StyledPdfReport.cs     Visual PDF dashboard
 scripts/build-cli.ps1         Reproducible native Windows build
