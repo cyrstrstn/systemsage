@@ -23,39 +23,52 @@ Interactive launches check the latest GitHub release and offer an optional one-k
 
 ## One-command install
 
-Open **PowerShell** and paste:
+Open **Windows PowerShell** and paste:
 
 ```powershell
 irm https://raw.githubusercontent.com/cyrstrstn/systemsage/main/scripts/irm-install.ps1 | iex
 ```
 
-If your PC blocks scripts (`running scripts is disabled` / ExecutionPolicy), use this instead — still one paste, no permanent policy change:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/cyrstrstn/systemsage/main/scripts/irm-install.ps1 | iex"
-```
-
-Open a new terminal, then launch the interactive menu:
+Open a **new** terminal, then launch:
 
 ```powershell
 systemsage
 ```
 
 > [!NOTE]
-> Installation is per-user and does not require Administrator access. SystemSage is installed under `%LOCALAPPDATA%\Programs\SystemSage` and added to your user `PATH`. The installer runs in memory and does not require changing your system ExecutionPolicy permanently.
+> Installation is per-user and does **not** need Administrator. Files go under `%LOCALAPPDATA%\Programs\SystemSage`, and your user `PATH` is updated. The remote installer runs **in memory** (it does not leave a blocked `.ps1` on disk).
+
+### If scripts are blocked (ExecutionPolicy)
+
+Some PCs show errors like:
+
+- `running scripts is disabled on this system`
+- `File cannot be loaded because running scripts is disabled`
+- `UnauthorizedAccess` / ExecutionPolicy
+
+Use this **one paste** instead. It only bypasses policy for that install command. It does **not** permanently change your PC policy:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/cyrstrstn/systemsage/main/scripts/irm-install.ps1 | iex"
+```
+
+**Windows Terminal / PowerShell tip:** paste the whole line, press Enter, wait until you see `SystemSage installed successfully`, then open a **new** tab/window before running `systemsage`.
+
+You do **not** need `Set-ExecutionPolicy RemoteSigned` (or any permanent policy change) to install SystemSage.
 
 ### Update
 
-Run the same installation command again. It downloads and installs the latest GitHub release.
+Run the same install command again (normal `irm ... | iex`, or the Bypass line if scripts are blocked). It downloads and installs the latest GitHub release.
 
 ### Manual installation
 
 1. Download [`SystemSage-Windows.zip`](https://github.com/cyrstrstn/systemsage/releases/latest/download/SystemSage-Windows.zip).
 2. Extract the archive.
-3. From that folder in PowerShell run:
+3. Open PowerShell **in that folder** and run:
    ```powershell
    powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
    ```
+   If scripts are not blocked on your PC, `.\install.ps1` also works.
 
 ## Why SystemSage?
 
